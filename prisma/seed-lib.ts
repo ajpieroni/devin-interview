@@ -1,4 +1,6 @@
-import type { PrismaClient } from "@prisma/client";
+import type { prisma as Db } from "../src/core/db";
+
+type PrismaClient = typeof Db;
 import { DEV_USERS } from "../src/config/auth";
 import { rolesFromGroups } from "../src/config/policy";
 import { requiredApprovals } from "../src/config/approval-rules";

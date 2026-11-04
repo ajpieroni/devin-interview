@@ -3,6 +3,7 @@ import { can } from "@/config/policy";
 import { requirePage } from "@/core/authz";
 import { auditFilterOptions, listAudit } from "@/core/audit-query";
 import { HttpError } from "@/core/http";
+import { timed } from "@/core/timing";
 import { parseJson } from "@/core/json";
 import { VerifyAudit } from "@/components/VerifyAudit";
 import { EmptyState, ErrorState, ListFooter } from "@/components/ui";
@@ -18,15 +19,14 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
   const user = await requirePage("audit:read", "/audit");
   const raw = await searchParams;
   const sp = new URLSearchParams(Object.entries(raw).filter((e): e is [string, string] => !!e[1]));
-  const t0 = performance.now();
   let result;
+  let ms: number;
   try {
-    result = await listAudit(sp);
+    ({ value: result, ms } = await timed(() => listAudit(sp)));
   } catch (err) {
     if (err instanceof HttpError) return <ErrorState>{err.message}</ErrorState>;
     throw err;
   }
-  const ms = performance.now() - t0;
   const options = await auditFilterOptions();
   const pages = Math.max(1, Math.ceil(result.total / result.pageSize));
   const pageHref = (p: number) => {

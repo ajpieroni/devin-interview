@@ -1,4 +1,4 @@
-import type { Case, Prisma } from "@prisma/client";
+import type { Case, Prisma } from "@/generated/prisma/client";
 import { z } from "zod";
 import { requiredApprovals } from "@/config/approval-rules";
 import { prisma } from "./db";

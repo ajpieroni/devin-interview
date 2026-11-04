@@ -3,6 +3,7 @@ import { requirePage } from "@/core/authz";
 import { CASE_STATUSES, OPEN_STATUSES, RISKS, listCases, parseCaseQuery } from "@/core/cases";
 import { ageDays, money } from "@/core/format";
 import { HttpError } from "@/core/http";
+import { timed } from "@/core/timing";
 import { REVIEW_TARGET_DAYS } from "@/config/approval-rules";
 import { EmptyState, ErrorState, ListFooter } from "@/components/ui";
 
@@ -13,14 +14,13 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
   for (const [k, v] of Object.entries(raw)) for (const one of [v].flat()) if (one) sp.append(k, one);
 
   let result;
-  const t0 = performance.now();
+  let ms: number;
   try {
-    result = await listCases(parseCaseQuery(sp));
+    ({ value: result, ms } = await timed(() => listCases(parseCaseQuery(sp))));
   } catch (err) {
     if (err instanceof HttpError) return <ErrorState>{err.message}</ErrorState>;
     throw err;
   }
-  const ms = performance.now() - t0;
   const pages = Math.max(1, Math.ceil(result.total / result.pageSize));
   const pageHref = (p: number) => {
     const next = new URLSearchParams(sp);

@@ -10,6 +10,6 @@ export default defineConfig({
     fileParallelism: false,
     testTimeout: 60_000,
     hookTimeout: 120_000,
-    env: { DATABASE_URL: "file:./test.db", IDP: "dev", NODE_ENV: "test" },
+    env: { DATABASE_URL: "file:./prisma/test.db", IDP: "dev", NODE_ENV: "test" },
   },
 });

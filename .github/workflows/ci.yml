@@ -9,7 +9,7 @@ jobs:
   check:
     runs-on: ubuntu-latest
     env:
-      DATABASE_URL: file:./ci.db
+      DATABASE_URL: file:./prisma/ci.db
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,7 +21,7 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
-      - run: npx prisma db push --skip-generate
+      - run: npx prisma db push
       - run: npm run build
 
   secret-scan:

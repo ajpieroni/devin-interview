@@ -1,8 +1,8 @@
 import { execSync } from "node:child_process";
 
 export default function setup() {
-  execSync("npx prisma db push --force-reset --skip-generate", {
+  execSync("npx prisma db push --force-reset", {
     stdio: "inherit",
-    env: { ...process.env, DATABASE_URL: "file:./test.db", PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: "yes" },
+    env: { ...process.env, DATABASE_URL: "file:./prisma/test.db", PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION: "yes" },
   });
 }

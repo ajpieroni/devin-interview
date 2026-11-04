@@ -1,8 +1,6 @@
 // Demo helper: edits one audit row directly in the database, bypassing the
 // app, to show that /api/audit/verify detects it.
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { prisma } from "../src/core/db";
 
 async function main() {
   const target = await prisma.auditEntry.findFirst({ where: { action: "case.approve" }, orderBy: { id: "desc" } })

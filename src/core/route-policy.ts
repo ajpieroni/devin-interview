@@ -17,12 +17,12 @@ const METHODS = "GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS";
 // Static scan of src/app, mirroring the P0-6 test: every API handler must be
 // wrapped in withPolicy(...) or an allowlisted publicRoute(...), and every page
 // must call requirePage(...) unless allowlisted.
-export function scanRoutePolicies(appDir = path.join(process.cwd(), "src/app")): RoutePolicy[] {
-  const files = (fs.readdirSync(appDir, { recursive: true }) as string[]).filter((f) => /(^|[\\/])(route\.ts|page\.tsx)$/.test(f));
+export function scanRoutePolicies(appDir = path.join(/*turbopackIgnore: true*/ process.cwd(), "src/app")): RoutePolicy[] {
+  const files = (fs.readdirSync(/*turbopackIgnore: true*/ appDir, { recursive: true }) as string[]).filter((f) => /(^|[\\/])(route\.ts|page\.tsx)$/.test(f));
   const out: RoutePolicy[] = [];
   for (const f of files.sort()) {
     const dir = path.dirname(f).split(path.sep).join("/").replace(/^\.$/, "");
-    const src = fs.readFileSync(path.join(appDir, f), "utf8");
+    const src = fs.readFileSync(/*turbopackIgnore: true*/ path.join(appDir, f), "utf8");
     if (f.endsWith("route.ts")) {
       const declared = [...src.matchAll(new RegExp(`export (?:const|async function|function) (${METHODS})\\b`, "g"))].map((m) => m[1]);
       if (declared.length === 0) out.push({ path: `/${dir}`, kind: "api", method: "-", policy: null, roles: [], ok: false, problem: "no handlers found" });

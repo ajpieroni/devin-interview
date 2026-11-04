@@ -6,7 +6,7 @@
 
 **Cut and known gaps at a glance** (details at the end):
 - Cut: the three apps, real-IdP integration test, Postgres.
-- Gaps: audit log is tamper-evident, not tamper-proof; rate limit and audit write queue are in-memory (one process only); `npm audit` reports advisories that need major upgrades (Next 16, Prisma 7, Vitest 5).
+- Gaps: audit log is tamper-evident, not tamper-proof; rate limit and audit write queue are in-memory (one process only); `src/middleware.ts` uses Next 16's deprecated `middleware` convention.
 
 ## Run it (one command)
 
@@ -16,7 +16,7 @@ Requires Node 22.
 npm install && npm run setup && npm run dev   # http://localhost:3000
 ```
 
-`npm run setup` creates `.env`, the SQLite schema and the seed. Then:
+`npm run setup` creates `.env`, the SQLite schema (`prisma/dev.db`) and the seed. SQLite paths in `DATABASE_URL` are relative to the repo root. Then:
 
 - `npm run demo:reset`: restore the seed state (10,000 cases, 4 users, empty audit log) in about 1 second.
 - `npm run demo:tamper`: edit one audit row directly in the database. Click **Verify chain** on `/audit` and it turns red, naming the broken entry.
@@ -78,7 +78,8 @@ Measured locally (SQLite, 10,000 cases): first queue page about 20 ms; filtered 
 
 - The audit log is **tamper-evident, not tamper-proof**: a database admin could rewrite the whole chain. Anchoring the head hash outside the database would close that gap.
 - The audit write queue and the reveal rate limiter live in process memory, so they are correct for one instance only. Several instances would need row or advisory locks and a shared store.
-- `npm audit --audit-level=high` fails today. The fixes need major upgrades (Next 16 for postcss, Prisma 7, Vitest 5, ESLint 9 plugins), which are not in the PRD's scope without sign-off.
+- Upgraded to Next 16, Prisma 7 (driver adapter `@prisma/adapter-better-sqlite3`, client generated to `src/generated/prisma`) and Vitest 5 so `npm audit --audit-level=high` passes. 16 moderate advisories remain, all in ESLint plugins via `minimatch` (dev-only tooling, no non-breaking fix).
+- Next 16 renamed `middleware` to `proxy` (Node runtime). The file stays `src/middleware.ts` because the P0-1 and P0-6 tests import it by that path, and the rule is not to edit tests; Next still runs it, with a deprecation warning.
 - CSRF protection is an Origin check plus sameSite cookies, with no per-form token. There is no session revocation list.
 - `/policy` scans source files at runtime, so it needs the repo on disk (true for `npm run dev` and `npm start` here).
 
