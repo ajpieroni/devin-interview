@@ -1,6 +1,7 @@
+import { parse, reasonBody } from "./validation";
 import { HttpError } from "./http";
 
-export async function readJson<T>(req: Request): Promise<T> {
+export async function readJson<T = unknown>(req: Request): Promise<T> {
   try {
     return (await req.json()) as T;
   } catch {
@@ -9,6 +10,5 @@ export async function readJson<T>(req: Request): Promise<T> {
 }
 
 export async function readReason(req: Request): Promise<string> {
-  const { reason } = await readJson<{ reason?: unknown }>(req);
-  return typeof reason === "string" ? reason : "";
+  return parse(reasonBody, await readJson(req)).reason;
 }

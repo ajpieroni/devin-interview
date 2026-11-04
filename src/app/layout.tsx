@@ -18,6 +18,8 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <strong>Internal Tools</strong>
           {user && <Link href="/cases">Cases</Link>}
           {user && can(user.roles, "audit:read") && <Link href="/audit">Audit log</Link>}
+          {user && <Link href="/policy">Policy</Link>}
+          {user && <Link href="/rules">Rules</Link>}
           <span className="spacer" />
           {user && (
             <>

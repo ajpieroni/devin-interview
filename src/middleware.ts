@@ -10,7 +10,26 @@ export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATH_PREFIXES.some((p) => (p.endsWith("/") ? pathname.startsWith(p) : pathname === p || pathname.startsWith(`${p}/`)));
 }
 
+const SAFE_METHODS = ["GET", "HEAD", "OPTIONS"];
+
+// CSRF: state-changing requests must come from this site's own pages. Browsers
+// always send Origin on cross-site POSTs and pages cannot forge it.
+export function isCrossSiteWrite(req: NextRequest): boolean {
+  if (SAFE_METHODS.includes(req.method)) return false;
+  const origin = req.headers.get("origin");
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  if (!origin || !host) return true;
+  try {
+    return new URL(origin).host !== host;
+  } catch {
+    return true;
+  }
+}
+
 export async function middleware(req: NextRequest) {
+  if (isCrossSiteWrite(req)) {
+    return NextResponse.json({ error: "Blocked: state-changing requests must come from this site (CSRF protection)." }, { status: 403 });
+  }
   const requestId = req.headers.get("x-request-id") ?? crypto.randomUUID();
   const headers = new Headers(req.headers);
   headers.set("x-request-id", requestId);

@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { requirePage } from "@/core/authz";
-import { CASE_STATUSES, RISKS, listCases, parseCaseQuery } from "@/core/cases";
+import { CASE_STATUSES, OPEN_STATUSES, RISKS, listCases, parseCaseQuery } from "@/core/cases";
 import { ageDays, money } from "@/core/format";
 import { HttpError } from "@/core/http";
+import { REVIEW_TARGET_DAYS } from "@/config/approval-rules";
+import { EmptyState, ErrorState, ListFooter } from "@/components/ui";
 
 export default async function CasesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await requirePage("cases:read", "/cases");
@@ -11,12 +13,14 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
   for (const [k, v] of Object.entries(raw)) for (const one of [v].flat()) if (one) sp.append(k, one);
 
   let result;
+  const t0 = performance.now();
   try {
     result = await listCases(parseCaseQuery(sp));
   } catch (err) {
-    if (err instanceof HttpError) return <p className="error">{err.message}</p>;
+    if (err instanceof HttpError) return <ErrorState>{err.message}</ErrorState>;
     throw err;
   }
+  const ms = performance.now() - t0;
   const pages = Math.max(1, Math.ceil(result.total / result.pageSize));
   const pageHref = (p: number) => {
     const next = new URLSearchParams(sp);
@@ -58,7 +62,9 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
         </label>
         <button type="submit">Apply</button>
       </form>
-      <p className="muted">{result.total.toLocaleString()} cases · page {result.page} of {pages}</p>
+      {result.items.length === 0 ? (
+        <EmptyState>No cases match these filters.</EmptyState>
+      ) : (
       <table>
         <thead>
           <tr><th>Case</th><th>Type</th><th>Status</th><th>Risk</th><th>Amount</th><th>Requester</th><th>Age</th></tr>
@@ -72,15 +78,23 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
               <td><span className={`badge ${c.risk}`}>{c.risk}</span></td>
               <td>{c.amountCents ? money(c.amountCents) : "—"}</td>
               <td className="mono">{c.requesterId}</td>
-              <td>{ageDays(c.createdAt)}d</td>
+              <td>
+                {ageDays(c.createdAt)}d{" "}
+                {OPEN_STATUSES.includes(c.status) && ageDays(c.createdAt) > (REVIEW_TARGET_DAYS[c.type] ?? Infinity) && (
+                  <span className="badge high" title={`Review target: ${REVIEW_TARGET_DAYS[c.type]} days`}>overdue</span>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
+      )}
       <div className="pager">
         {result.page > 1 && <Link href={pageHref(result.page - 1)}>← Prev</Link>}
+        <span className="muted">Page {result.page} of {pages}</span>
         {result.page < pages && <Link href={pageHref(result.page + 1)}>Next →</Link>}
       </div>
+      <ListFooter shown={result.items.length} total={result.total} ms={ms} />
     </>
   );
 }

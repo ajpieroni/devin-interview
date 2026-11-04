@@ -2,10 +2,11 @@ import type { NextRequest } from "next/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE } from "@/config/auth";
-import { can, type Permission } from "@/config/policy";
+import { can, deniedMessage, type Permission } from "@/config/policy";
 import { readSessionToken, type SessionUser } from "./auth/session";
 import { writeAudit } from "./audit";
 import { HttpError, json } from "./http";
+import { idParam } from "./validation";
 
 export interface RouteContext {
   user: SessionUser;
@@ -34,9 +35,12 @@ export function withPolicy(permission: Permission, handler: Handler) {
         after: { permission, roles: user.roles },
         requestId,
       });
-      return json(403, { error: "forbidden", permission });
+      return json(403, { error: deniedMessage(user.roles, permission), permission });
     }
     const params = (await routeCtx?.params) ?? {};
+    for (const [key, value] of Object.entries(params)) {
+      if (!idParam.safeParse(value).success) return json(400, { error: `invalid ${key}` });
+    }
     try {
       return await handler(req, { user, requestId, params });
     } catch (err) {
@@ -69,7 +73,7 @@ export async function requirePage(permission: Permission, path: string): Promise
       after: { permission, roles: user.roles },
       requestId: crypto.randomUUID(),
     });
-    redirect("/forbidden");
+    redirect(`/forbidden?${new URLSearchParams({ need: permission, from: path })}`);
   }
   return user;
 }

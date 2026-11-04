@@ -36,7 +36,7 @@ export function CaseActions(props: { caseId: string; status: string; canApprove:
     <div className="card">
       <h2 style={{ marginTop: 0 }}>Decision</h2>
       <div className="actions">
-        {props.canApprove && <button disabled={busy} onClick={() => act("approve")}>Approve</button>}
+        {props.canApprove && <button disabled={busy} onClick={() => act("approve")}>{busy ? "Saving…" : "Approve"}</button>}
         {props.canDecide && (
           <>
             <input placeholder="Reason (required to reject or escalate)" value={reason} onChange={(e) => setReason(e.target.value)} style={{ minWidth: 320 }} />

@@ -26,3 +26,6 @@ export function requiredApprovals(c: { type: string; amountCents: number; risk: 
   if (rule.secondApproverRisks?.includes(c.risk as Risk)) return 2;
   return 1;
 }
+
+// Assumed review targets in days. Open cases older than this show as overdue.
+export const REVIEW_TARGET_DAYS: Record<string, number> = { kyc: 7, refund: 7 };

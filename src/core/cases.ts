@@ -1,8 +1,10 @@
 import type { Case, Prisma } from "@prisma/client";
+import { z } from "zod";
 import { requiredApprovals } from "@/config/approval-rules";
 import { prisma } from "./db";
 import { HttpError } from "./http";
 import { parseJson } from "./json";
+import { intParam, parse, qp } from "./validation";
 
 export const CASE_STATUSES = ["pending", "awaiting_second_approval", "approved", "rejected", "escalated"] as const;
 export const OPEN_STATUSES: readonly string[] = ["pending", "awaiting_second_approval", "escalated"];
@@ -24,35 +26,33 @@ export interface CaseQuery {
   pageSize: number;
 }
 
+const caseQuerySchema = z.object({
+  type: z.enum(["kyc", "refund"]).optional(),
+  status: z.array(z.enum(CASE_STATUSES)),
+  risk: z.array(z.enum(RISKS)),
+  minAgeDays: intParam(0, 3650).optional(),
+  maxAgeDays: intParam(0, 3650).optional(),
+  assigneeId: z.string().max(64).optional(),
+  sort: z.enum(SORTS).default("createdAt"),
+  order: z.enum(["asc", "desc"]).default("asc"),
+  page: intParam(1, 1_000_000).default(1),
+  pageSize: intParam(1, MAX_PAGE_SIZE).default(25),
+});
+
 export function parseCaseQuery(sp: URLSearchParams): CaseQuery {
-  const list = (key: string, allowed: readonly string[]) => {
-    const values = sp.getAll(key).flatMap((v) => v.split(",")).filter(Boolean);
-    for (const v of values) if (!allowed.includes(v)) throw new HttpError(400, `invalid ${key}: ${v}`);
-    return values;
-  };
-  const int = (key: string, min: number, max: number, fallback?: number) => {
-    const raw = sp.get(key);
-    if (raw === null || raw === "") return fallback;
-    const n = Number(raw);
-    if (!Number.isInteger(n) || n < min || n > max) throw new HttpError(400, `invalid ${key}`);
-    return n;
-  };
-  const sort = (sp.get("sort") ?? "createdAt") as CaseQuery["sort"];
-  if (!SORTS.includes(sort)) throw new HttpError(400, "invalid sort");
-  const order = (sp.get("order") ?? "asc") as CaseQuery["order"];
-  if (order !== "asc" && order !== "desc") throw new HttpError(400, "invalid order");
-  return {
-    type: sp.get("type") || undefined,
-    status: list("status", CASE_STATUSES),
-    risk: list("risk", RISKS),
-    minAgeDays: int("minAgeDays", 0, 3650),
-    maxAgeDays: int("maxAgeDays", 0, 3650),
-    assigneeId: sp.get("assigneeId") || undefined,
-    sort,
-    order,
-    page: int("page", 1, 1_000_000, 1)!,
-    pageSize: int("pageSize", 1, MAX_PAGE_SIZE, 25)!,
-  };
+  const multi = (key: string) => sp.getAll(key).flatMap((v) => v.split(",")).filter(Boolean);
+  return parse(caseQuerySchema, {
+    type: qp(sp, "type"),
+    status: multi("status"),
+    risk: multi("risk"),
+    minAgeDays: qp(sp, "minAgeDays"),
+    maxAgeDays: qp(sp, "maxAgeDays"),
+    assigneeId: qp(sp, "assigneeId"),
+    sort: qp(sp, "sort"),
+    order: qp(sp, "order"),
+    page: qp(sp, "page"),
+    pageSize: qp(sp, "pageSize"),
+  });
 }
 
 export function buildCaseWhere(q: CaseQuery, now = new Date()): Prisma.CaseWhereInput {

@@ -1,0 +1,7 @@
+# Devin session log
+
+One row per Devin session. Times are America/New_York.
+
+| # | Prompt summary | Start | End | PR | What Devin got wrong or the user corrected |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Build the shared core from the PRD P0 table (sign-in, roles, queue, maker-checker, audit, default deny), tests and CI; then the PRD addendum (repeatable demo seed, `demo:reset`, audit filters and diff view, Policy and Rules pages, denial messages, list footers, zod validation, CSRF, reveal rate limit, `npm audit` and secret scan in CI, docs). | 2026-11-03 19:53 | in progress | [#1](https://github.com/ajpieroni/devin-interview/pull/1) | (1) Concurrent audited writes timed out on SQLite; fixed with an in-process write queue. (2) End-to-end testing found a sign-in loop: an empty `SESSION_SECRET` became an empty HMAC key that the Edge middleware rejected; unit tests had missed it. Fixed, with a regression test. (3) The first README role table overstated the approver and admin permissions; corrected before push. (4) The user tightened scope with the addendum: build only what the PRD lists, never weaken tests. |
