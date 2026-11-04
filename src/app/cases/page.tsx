@@ -1,0 +1,86 @@
+import Link from "next/link";
+import { requirePage } from "@/core/authz";
+import { CASE_STATUSES, RISKS, listCases, parseCaseQuery } from "@/core/cases";
+import { ageDays, money } from "@/core/format";
+import { HttpError } from "@/core/http";
+
+export default async function CasesPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  await requirePage("cases:read", "/cases");
+  const raw = await searchParams;
+  const sp = new URLSearchParams();
+  for (const [k, v] of Object.entries(raw)) for (const one of [v].flat()) if (one) sp.append(k, one);
+
+  let result;
+  try {
+    result = await listCases(parseCaseQuery(sp));
+  } catch (err) {
+    if (err instanceof HttpError) return <p className="error">{err.message}</p>;
+    throw err;
+  }
+  const pages = Math.max(1, Math.ceil(result.total / result.pageSize));
+  const pageHref = (p: number) => {
+    const next = new URLSearchParams(sp);
+    next.set("page", String(p));
+    return `/cases?${next}`;
+  };
+
+  return (
+    <>
+      <h1>Work queue</h1>
+      <form className="filters" method="get">
+        <label>Type
+          <select name="type" defaultValue={sp.get("type") ?? ""}>
+            <option value="">All</option>
+            <option value="kyc">KYC</option>
+            <option value="refund">Refund</option>
+          </select>
+        </label>
+        <label>Status
+          <select name="status" defaultValue={sp.get("status") ?? ""}>
+            <option value="">All</option>
+            {CASE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </label>
+        <label>Risk
+          <select name="risk" defaultValue={sp.get("risk") ?? ""}>
+            <option value="">All</option>
+            {RISKS.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </label>
+        <label>Older than (days)
+          <input name="minAgeDays" type="number" min={0} defaultValue={sp.get("minAgeDays") ?? ""} style={{ width: 90 }} />
+        </label>
+        <label>Sort
+          <select name="order" defaultValue={sp.get("order") ?? "asc"}>
+            <option value="asc">Oldest first</option>
+            <option value="desc">Newest first</option>
+          </select>
+        </label>
+        <button type="submit">Apply</button>
+      </form>
+      <p className="muted">{result.total.toLocaleString()} cases · page {result.page} of {pages}</p>
+      <table>
+        <thead>
+          <tr><th>Case</th><th>Type</th><th>Status</th><th>Risk</th><th>Amount</th><th>Requester</th><th>Age</th></tr>
+        </thead>
+        <tbody>
+          {result.items.map((c) => (
+            <tr key={c.id}>
+              <td><Link href={`/cases/${c.id}`} className="mono">{c.id.slice(-8)}</Link></td>
+              <td>{c.type}</td>
+              <td>{c.status}</td>
+              <td><span className={`badge ${c.risk}`}>{c.risk}</span></td>
+              <td>{c.amountCents ? money(c.amountCents) : "—"}</td>
+              <td className="mono">{c.requesterId}</td>
+              <td>{ageDays(c.createdAt)}d</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="pager">
+        {result.page > 1 && <Link href={pageHref(result.page - 1)}>← Prev</Link>}
+        {result.page < pages && <Link href={pageHref(result.page + 1)}>Next →</Link>}
+      </div>
+    </>
+  );
+}
