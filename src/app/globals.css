@@ -40,3 +40,5 @@ code, .mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
 .diff { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
 .diff pre { margin: 0; padding: 6px; background: #f9fafb; border: 1px solid #e5e7eb; font-size: 11px; white-space: pre-wrap; word-break: break-all; }
 .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; align-items: start; }
+fieldset.plans { border: 1px solid #d1d5db; border-radius: 4px; padding: 2px 8px; display: flex; gap: 8px; font-size: 12px; }
+label.inline { flex-direction: row; align-items: center; gap: 4px; }

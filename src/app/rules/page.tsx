@@ -1,4 +1,4 @@
-import { APPROVAL_RULES, REQUESTER_CAN_APPROVE, REVIEW_TARGET_DAYS } from "@/config/approval-rules";
+import { APPROVAL_RULES, FLAG_RULES, REQUESTER_CAN_APPROVE, REVIEW_TARGET_DAYS } from "@/config/approval-rules";
 import { REVEAL_RATE_LIMIT } from "@/config/policy";
 import { requirePage } from "@/core/authz";
 import { money } from "@/core/format";
@@ -25,6 +25,16 @@ export default async function RulesPage() {
               <td>{REVIEW_TARGET_DAYS[type] ? `${REVIEW_TARGET_DAYS[type]} days` : "—"}</td>
             </tr>
           ))}
+        </tbody>
+      </table>
+      <h2>Feature flags</h2>
+      <table>
+        <tbody>
+          <tr><td>Environments</td><td>{FLAG_RULES.environments.join(", ")}</td></tr>
+          <tr><td>Need a second, distinct approver</td><td>{FLAG_RULES.protectedEnvironments.join(", ")}</td></tr>
+          <tr><td>Apply immediately (still audited)</td><td>{FLAG_RULES.environments.filter((e) => !FLAG_RULES.protectedEnvironments.includes(e)).join(", ")}</td></tr>
+          <tr><td>Plan tiers for targeting</td><td>{FLAG_RULES.planTiers.join(", ")}</td></tr>
+          <tr><td>Kill switch</td><td>off in every environment in one action, no second approver (switching off is the safe direction); reason required</td></tr>
         </tbody>
       </table>
       <h2>Always applies</h2>

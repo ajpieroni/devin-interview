@@ -13,6 +13,10 @@ export const PERMISSIONS = {
   "audit:read": ["approver", "admin"],
   "audit:verify": ["admin"],
   "audit:export": ["admin"],
+  "flags:read": ["viewer", "reviewer", "approver", "admin"],
+  "flags:change": ["reviewer", "approver", "admin"],
+  "flags:approve": ["approver", "admin"],
+  "flags:kill": ["reviewer", "approver", "admin"],
 } as const satisfies Record<string, readonly Role[]>;
 
 export type Permission = keyof typeof PERMISSIONS;
@@ -54,6 +58,10 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   "audit:read": "view the audit log",
   "audit:verify": "verify the audit chain",
   "audit:export": "export the audit log",
+  "flags:read": "view feature flags",
+  "flags:change": "change feature flags",
+  "flags:approve": "approve production flag changes",
+  "flags:kill": "use the kill switch",
 };
 
 export function deniedMessage(roles: readonly string[], permission: Permission): string {

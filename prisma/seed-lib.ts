@@ -127,9 +127,24 @@ export function generateCases(opts: SeedOptions = {}) {
   return generateSeed(opts).cases;
 }
 
+const on = (plans: string[] = []) => ({ on: true, plans });
+const off = { on: false, plans: [] };
+export const SEED_FLAGS = [
+  { key: "new-checkout", description: "New checkout flow", envs: { dev: on(), staging: on(), prod: off } },
+  { key: "instant-payouts", description: "Instant payouts, gated to the enterprise plan tier", envs: { dev: on(["enterprise"]), staging: on(["enterprise"]), prod: on(["enterprise"]) } },
+  { key: "dark-mode", description: "Dark mode in the customer app", envs: { dev: on(), staging: on(), prod: on() } },
+  { key: "kyc-auto-approve-low-risk", description: "Auto-approve low-risk KYC cases", envs: { dev: off, staging: off, prod: off } },
+];
+
+export async function seedFlags(prisma: PrismaClient) {
+  await prisma.$transaction([prisma.flagChange.deleteMany(), prisma.flag.deleteMany()]);
+  await prisma.flag.createMany({ data: SEED_FLAGS.map((f) => ({ key: f.key, description: f.description, envs: JSON.stringify(f.envs) })) });
+}
+
 export async function resetAndSeed(prisma: PrismaClient, opts: SeedOptions = {}) {
   const { cases, approvals } = generateSeed(opts);
   await prisma.$transaction([prisma.approval.deleteMany(), prisma.case.deleteMany(), prisma.auditEntry.deleteMany()]);
+  await seedFlags(prisma);
   for (const u of DEV_USERS) {
     const roles = rolesFromGroups(u.groups).join(",");
     await prisma.user.upsert({ where: { id: u.sub }, create: { id: u.sub, email: u.email, name: u.name, roles }, update: { email: u.email, name: u.name, roles } });

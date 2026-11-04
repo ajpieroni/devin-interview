@@ -29,3 +29,12 @@ export function requiredApprovals(c: { type: string; amountCents: number; risk: 
 
 // Assumed review targets in days. Open cases older than this show as overdue.
 export const REVIEW_TARGET_DAYS: Record<string, number> = { kyc: 7, refund: 7 };
+
+// Feature flags: changes to protected environments need a second, distinct
+// approver; other environments apply immediately. The kill switch turns a flag
+// off everywhere in one action, because switching off is the safe direction.
+export const FLAG_RULES = {
+  environments: ["dev", "staging", "prod"] as const,
+  protectedEnvironments: ["prod"] as readonly string[],
+  planTiers: ["free", "pro", "enterprise"] as const,
+};
