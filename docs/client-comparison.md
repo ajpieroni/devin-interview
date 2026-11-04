@@ -1,56 +1,54 @@
-# Internal tools: a code core built with Devin vs Power Apps
+# Evidence pack for the one-pager and recommendation
 
-**For:** VP of Engineering. **Decision:** keep paying for Power Apps, rebuild on a code core with Devin, or run both. This prototype is evidence for that decision, not production software. Data is synthetic, and there are no compliance claims.
+These are notes to write the one-pager from, not the one-pager. Every number is measured in this repo or cited. Anything else is labeled as an assumption or a question.
 
-## What was built and measured
+## Discovery first: the $250K doesn't fit 60 engineers
 
-- **One shared core** provides sign-in (OIDC adapter plus a local dev IdP), server-side roles with default deny, maker-checker approvals with limits in one config file, and a hash-chained audit log with verify, a tamper demo and CSV export.
-- **Three apps on top of it,** the client's current Power Apps tools: a KYC review queue, a refunds dashboard, and a feature-flag admin with a tier-gated flag, a second approver for production and a kill switch.
-- **The apps changed 0 lines of core code (`src/core`).** That is H1 in the PRD. The flag app added its data model, four permissions and its rules to the config files. Code added per app, including pages and API routes:
+- Premium lists at $20 per user per month ([Superblocks](https://www.superblocks.com/blog/powerapps-pricing)). 60 engineers on Premium would cost about $14,400 a year (60 × $20 × 12).
+- $250K a year at that price is about 1,040 seats ($250,000 ÷ $240). That's arithmetic, not data.
+- So either most users are not engineers (ops, support, compliance staff), or the $250K covers more than licenses: Dataverse capacity, Power Automate, consultants, a Center of Excellence.
+- Either answer changes the recommendation. Many non-engineer users means the builder matters and "buy" gets stronger. Mostly capacity and consultants means a rebuild could remove more of it.
+- Ask before recommending: what does the $250K cover; how many people use each app, and how many are engineers; who edits the apps; where the KYC and refund data live; Entra, Okta or Google; is Dataverse auditing on, and what has capacity overage cost over 12 months.
 
-| App | App code | Tests | Core code changed |
+## Measured in this prototype
+
+| Fact | Value | Where |
+| --- | --- | --- |
+| Core code (`src/core`) changed by the three apps | 0 lines | per-app commits on PR #1 |
+| App size: KYC / refunds / flags | 116 / 163 / 505 lines (flags incl. 60 lines of schema, config and seed) | same commits |
+| Automated tests | 104, named after PRD IDs; CI green (`npm audit`, lint, typecheck, tests, build, secret scan) | `tests/`, `.github/workflows/ci.yml` |
+| Queue page at 10,000 cases | about 5–20 ms locally (SQLite, dev server) | list footers; `p0-3-queue` asserts < 500 ms |
+| Demo reset | about 1.5 s | `npm run demo:reset` |
+| Defects caught by end-to-end testing that unit tests missed | 2 (sign-in loop with an empty `SESSION_SECRET`; refunds filter select out of sync with the URL) | `docs/devin-log.md` |
+| Human review minutes per PR, request-to-merge for 3 change requests | not yet recorded | README change log, for you to fill |
+| Devin compute cost | not stated: Cognition doesn't publish the ACU rate | session usage page only |
+
+Power Apps facts used (cited in the PRD): non-delegable queries return the first 500 records, adjustable to 2,000 ([Microsoft](https://learn.microsoft.com/en-us/power-apps/maker/canvas-apps/delegation-overview)). Dataverse auditing is off by default and enabled per table ([Microsoft](https://learn.microsoft.com/power-platform/admin/manage-dataverse-auditing)). Microsoft maps Power Platform services to SOC 2, ISO 27001, GLBA and NYCRR 500 ([Microsoft](https://learn.microsoft.com/industry/financial-services/compliance-overview)). Vibe apps and Code Apps were in preview in 2026; check their status before quoting.
+
+## Tradeoffs, each with what would change the choice
+
+| Choice | Over | Cost | Would flip if |
 | --- | --- | --- | --- |
-| KYC review queue | 116 lines | 44 lines | 0 |
-| Refunds dashboard | 163 lines | 45 lines | 0 |
-| Feature-flag admin | 505 lines (incl. 60 of schema/config/seed) | 87 lines | 0 |
+| Shared code core, apps as thin modules | Three independent apps | Upfront core work; the core's flaws reach every app | App 2 or 3 had needed core rewrites (they didn't here; a real workflow may) |
+| OIDC seam with a stub IdP | Real Entra, Teams and Power Automate | SSO unproven; rebuilds what Microsoft bundles | Data and workflows mostly live in Dataverse and Power Automate |
+| Engineers as makers | Builder for non-engineers | Ops can't change an app without an engineer | Non-engineers edit these apps weekly |
+| Hash-chained audit in the app database | SIEM and write-once storage | Tamper-evident only | Auditors need nothing beyond Microsoft's reports |
+| Code in the client's repo | Licensed platform | Upgrades and on-call for 13+ apps (this session already needed one major-version upgrade round) | The platform team can't absorb that load |
 
-- **Every app inherits the controls.** Login, the role checks, plain-language denials, audited decisions, CSRF protection, input validation and the `/policy` default-deny check all came from the core; no app re-implemented them.
-- **Quality bar:** 104 automated tests named after the PRD requirements. CI runs `npm audit`, lint, typecheck, tests, build and a secret scan on every PR. Recorded browser runs covered all four roles.
-- **Volume:** with 10,000 cases, a queue page returns in about 5–20 ms locally, because filtering and paging happen in the database. Power Apps returns only the first 500 records (2,000 at most) for queries it cannot delegate to the data source ([Microsoft](https://learn.microsoft.com/en-us/power-apps/maker/canvas-apps/delegation-overview)).
+## What I'm least sure of
 
-## Side by side
+- What the $250K covers. It decides how much a rebuild could save.
+- Review time at app ten, not app one. This session measured build size, not human review minutes per change.
+- Whether Microsoft's AI app generation is good enough for a Microsoft shop to make this moot.
+- Maintenance load. The upgrade round (Next 16, Prisma 7, Vitest 5) hints at what owning the code costs.
 
-| Capability | Power Apps | Code core + Devin | Edge |
-| --- | --- | --- | --- |
-| Sign-in | Inherits Entra ID, embeds in Teams | OIDC adapter; switching IdP is configuration only. Not yet tested against a real IdP. | Power Apps today |
-| Roles | Security roles, Entra groups | One policy file, default deny, a `/policy` page listing every route and its roles, with a test that fails on any route lacking a policy | Code (reviewable in one place) |
-| Approvals | Power Automate flows | Maker-checker in config; the requester can never approve; second approver above $5,000, for high-risk KYC and for production flag changes; all tested | Code (rules are tested, not clicked) |
-| Audit trail | Dataverse auditing: off by default, enabled per table, consumes log capacity ([Microsoft](https://learn.microsoft.com/power-platform/admin/manage-dataverse-auditing)) | Every decision, reveal, denial and flag change goes into a hash chain; a direct database edit makes verify fail (tamper-evident, not tamper-proof) | Code for tamper-evidence; Microsoft for attestations |
-| Data at volume | Delegation limits, 500/2,000-row cap on non-delegable queries | Server-side filter, sort and page tested at 10,000 rows | Code |
-| Release process | Environments, managed solutions, pipelines; teams often publish by hand ([M365 FM](https://www.m365.fm/blog/why-manual-solution-exports-are-wrecking-your-power-apps-production-environment/)) | Every change is a PR with CI and a human reviewer | Code, if the team keeps the discipline |
-| Lock-in | Logic in Power Fx, runs only in Microsoft's cloud | Standard TypeScript/Postgres-portable stack in the client's repo | Code (with ownership cost) |
-| Connectors | Hundreds prebuilt | Built one at a time | Power Apps |
-| Non-engineer builders | Canvas, model-driven, Vibe apps | Not offered; an engineer reviews every Devin change | Power Apps |
-| Compliance evidence | Microsoft maps services to SOC 2, ISO 27001, GLBA, NYCRR 500 ([Microsoft](https://learn.microsoft.com/industry/financial-services/compliance-overview)) | None yet; the client would own evidence for its own code | Power Apps |
+## Where Devin shouldn't be used (honest limits)
 
-## Cost shape (needs the client's numbers)
+- Apps that business users build and edit themselves; Power Apps fits them better.
+- Workflows that need the Microsoft estate on day one (Teams, Power Automate, Dataverse).
+- Anything that needs production credentials or real customer data inside a session. The pilot rule is synthetic data only.
+- Changes with no human reviewer. This session's two end-to-end defects passed every unit test.
 
-At the $20 per user per month Premium list price ([Superblocks](https://www.superblocks.com/blog/powerapps-pricing)), $250K a year corresponds to about 1,040 seats. That assumes the whole budget is licenses; it may also cover Dataverse capacity, Power Automate or consultants. The code path swaps that for Devin compute, engineer review time, hosting and on-call for 13+ apps. The prototype measured the build side; the client's review minutes per PR (README change log) set the rest.
+## Smallest reversible next step
 
-## Where Power Apps still wins
-
-Zero-effort Entra and Teams integration. Prebuilt connectors. Business users who build and edit their own apps. Microsoft-supplied compliance evidence. No platform to run. Microsoft is also moving toward this pitch with AI-generated code apps on Dataverse (Vibe apps and Code Apps, in preview in 2026), so for a Microsoft shop whose data lives in Dataverse, "buy" stays a serious option.
-
-## Recommendation to test
-
-Run both, split by workload. Move the regulated, high-volume, audit-heavy workflows (KYC, refunds, production flags) onto the code core, where tested maker-checker, a tamper-evident audit trail and unlimited server-side paging matter most. Keep Power Apps for low-risk apps that business users build in the Microsoft estate. Re-decide after a 30-day pilot on one real workflow, using measured review minutes per change and the auditors' reaction to the evidence.
-
-**What would flip this:** the data and workflows mostly live in Dataverse and Power Automate; non-engineers edit these apps weekly; auditors need nothing beyond Microsoft's reports; or the platform team cannot absorb on-call for the apps.
-
-## Before production
-
-Test against a real IdP and sync IdP groups. Move to Postgres with row-level rules. Stream the audit log to a SIEM and write-once storage. Replace the in-process limiter and audit write queue with a shared store or locks. Map controls to SOC 2. Add branch protection with required reviewers.
-
-## Questions for you
-
-What does the $250K cover? Where do the KYC and refund data live? Entra, Okta or Google? Who edits the three apps today, and are they engineers? Is Dataverse auditing on for those tables, and what has capacity overage cost?
+A 30-day pilot on one regulated workflow (refunds is the smallest), run in parallel with the existing Power App and reverted by switching users back. Run it on the pilot access checklist (`docs/pilot-checklist.md`), with named PR approvers. Success is measured by review minutes per change, request-to-merge time, defects found after merge, and the auditors' reaction to the evidence. Keep Power Apps for low-risk, business-built apps either way.

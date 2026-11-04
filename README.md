@@ -1,6 +1,6 @@
 # Internal tools prototype: shared core
 
-**What it is.** A prototype that tests one idea: build the control plane of internal tools (sign-in, roles, maker-checker approvals, audit log) once, in code, and let Devin add thin apps on top of it cheaply. It is the comparison point for the client's Power Apps setup. It holds the shared core and the client's three tools built on it: a KYC review queue (`/kyc`), a refunds dashboard (`/refunds`) and a feature-flag admin (`/flags`). The three apps changed 0 lines of `src/core`. The client-facing comparison is in [docs/client-comparison.md](docs/client-comparison.md).
+**What it is.** A prototype that tests one idea: build the control plane of internal tools (sign-in, roles, maker-checker approvals, audit log) once, in code, and let Devin add thin apps on top of it cheaply. It is the comparison point for the client's Power Apps setup. It holds the shared core and the client's three tools built on it: a KYC review queue (`/kyc`), a refunds dashboard (`/refunds`) and a feature-flag admin (`/flags`). The three apps changed 0 lines of `src/core`. Evidence for the one-pager and recommendation is in [docs/client-comparison.md](docs/client-comparison.md). Enablement docs: [spec template](docs/spec-template.md), [PR review checklist](docs/pr-review-checklist.md), [pilot access checklist](docs/pilot-checklist.md).
 
 > Synthetic data only. No real credentials or customer data. Not production software; no compliance claims.
 
