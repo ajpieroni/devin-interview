@@ -39,3 +39,4 @@ code, .mono { font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
 .list-footer { margin-top: 8px; color: #6b7280; font-size: 12px; }
 .diff { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
 .diff pre { margin: 0; padding: 6px; background: #f9fafb; border: 1px solid #e5e7eb; font-size: 11px; white-space: pre-wrap; word-break: break-all; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; align-items: start; }
