@@ -8,7 +8,7 @@ import { parseJson } from "@/core/json";
 import { VerifyAudit } from "@/components/VerifyAudit";
 import { EmptyState, ErrorState, ListFooter } from "@/components/ui";
 
-const ENTITY_TYPES = ["case", "user", "route", "page"];
+const ENTITY_TYPES = ["case", "flag", "user", "route", "page"];
 
 function pretty(s: string | null) {
   if (!s) return "—";
