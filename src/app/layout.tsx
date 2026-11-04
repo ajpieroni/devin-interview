@@ -5,37 +5,51 @@ import { currentUser } from "@/core/authz";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Internal Tools",
-  description: "Shared internal-tools core: login, roles, approvals, audit",
+  title: "Northwind Ops",
+  description: "Internal tools on one shared core: sign-in, roles, approvals, audit",
 };
+
+const initials = (name: string) => name.split(" ").map((p) => p[0]).join("").slice(0, 2).toUpperCase();
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const user = await currentUser();
+  if (!user) {
+    return (
+      <html lang="en">
+        <body className="auth-body">{children}</body>
+      </html>
+    );
+  }
   return (
     <html lang="en">
       <body>
-        <header className="top">
-          <strong>Internal Tools</strong>
-          {user && <Link href="/cases">Cases</Link>}
-          {user && <Link href="/kyc">KYC</Link>}
-          {user && <Link href="/refunds">Refunds</Link>}
-          {user && <Link href="/flags">Flags</Link>}
-          {user && can(user.roles, "audit:read") && <Link href="/audit">Audit log</Link>}
-          {user && <Link href="/policy">Policy</Link>}
-          {user && <Link href="/rules">Rules</Link>}
-          <span className="spacer" />
-          {user && (
-            <>
-              <span className="who">
-                {user.name} · {user.roles.join(", ") || "no roles"}
-              </span>
+        <div className="shell">
+          <aside className="sidebar">
+            <div className="brand"><span className="logo">N</span>Northwind Ops</div>
+            <nav>
+              <div className="nav-group">Work</div>
+              <Link href="/kyc">KYC review</Link>
+              <Link href="/refunds">Refunds</Link>
+              <Link href="/flags">Feature flags</Link>
+              <Link href="/cases">All cases</Link>
+              <div className="nav-group">Controls</div>
+              {can(user.roles, "audit:read") && <Link href="/audit">Audit log</Link>}
+              <Link href="/policy">Access policy</Link>
+              <Link href="/rules">Approval rules</Link>
+            </nav>
+            <div className="me">
+              <span className="avatar">{initials(user.name)}</span>
+              <div>
+                <div className="me-name">{user.name}</div>
+                <div className="me-role">{user.roles.join(", ") || "no roles"}</div>
+              </div>
               <form action="/api/auth/logout" method="post">
-                <button className="secondary" type="submit">Log out</button>
+                <button className="link" type="submit" title="Sign out">Sign out</button>
               </form>
-            </>
-          )}
-        </header>
-        <main>{children}</main>
+            </div>
+          </aside>
+          <main className="content">{children}</main>
+        </div>
       </body>
     </html>
   );

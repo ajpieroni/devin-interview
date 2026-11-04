@@ -5,12 +5,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const { next } = await searchParams;
   const href = `/api/auth/login${next ? `?next=${encodeURIComponent(next)}` : ""}`;
   return (
-    <div className="card" style={{ maxWidth: 420, margin: "60px auto" }}>
+    <div className="auth-card">
+      <div className="brand auth-brand"><span className="logo">N</span>Northwind Ops</div>
       <h1>Sign in</h1>
-      <p className="muted">Identity provider: {IDP === "dev" ? "local dev IdP (stand-in for the company IdP)" : "OIDC"}</p>
-      <a href={href}>
-        <button type="button">Continue to sign in</button>
-      </a>
+      <p className="muted">Use your company account. Access is based on your directory groups.</p>
+      <a className="btn-primary" href={href}>Continue with company SSO</a>
+      <p className="auth-foot">{IDP === "dev" ? "Demo environment: synthetic data, demo directory." : "Single sign-on via OIDC."}</p>
     </div>
   );
 }
