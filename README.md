@@ -66,7 +66,7 @@ The audit log is **tamper-evident, not tamper-proof**: a database admin could re
 | --- | --- |
 | First queue page, 10,000 cases, local SQLite | ~20 ms (target < 500 ms) |
 | Filtered page (`status=pending&minAgeDays=30`) | ~2 ms |
-| Acceptance tests | 61 passing |
+| Acceptance tests | 62 passing |
 | Human review minutes per PR | _to fill in_ |
 | Compute spend per session | _to fill in_ |
 
@@ -83,6 +83,8 @@ The audit log is **tamper-evident, not tamper-proof**: a database admin could re
 Defects found during the build, before review:
 
 - Concurrent audited writes on SQLite hit socket timeouts because each waited on the single writer lock. Fixed by queueing audited transactions in-process; the unique `prevHash` column still rejects a forked chain if several processes write.
+
+- Found by end-to-end testing, missed by unit tests: with `SESSION_SECRET=""` (the `.env.example` default) the session key was an empty string. Node accepted it, but the Edge middleware's WebCrypto did not, so every signed-in page redirected back to `/login`. Fixed by falling back to the dev key on an empty value, with a regression test.
 
 Defects a reviewer finds that the tests missed go here.
 

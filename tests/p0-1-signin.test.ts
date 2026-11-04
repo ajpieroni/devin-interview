@@ -28,6 +28,17 @@ describe("P0-1 sign-in", () => {
     expect(res.status).toBe(401);
   });
 
+  it("falls back to the dev session secret when SESSION_SECRET is empty", async () => {
+    const prev = process.env.SESSION_SECRET;
+    process.env.SESSION_SECRET = "";
+    try {
+      const { sessionSecret } = await import("@/config/auth");
+      expect(sessionSecret().length).toBeGreaterThanOrEqual(32);
+    } finally {
+      process.env.SESSION_SECRET = prev;
+    }
+  });
+
   it("rejects a forged or tampered session cookie", async () => {
     const good = await sessionCookie("adam");
     const forged = good.slice(0, -4) + "AAAA";

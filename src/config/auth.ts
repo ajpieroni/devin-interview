@@ -16,7 +16,7 @@ export function sessionSecret(): Uint8Array {
   if (!secret && process.env.NODE_ENV === "production" && IDP !== "dev") {
     throw new Error("SESSION_SECRET must be set in production");
   }
-  return new TextEncoder().encode(secret ?? DEV_SECRET);
+  return new TextEncoder().encode(secret || DEV_SECRET);
 }
 
 export interface DevUser {
