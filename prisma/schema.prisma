@@ -1,0 +1,92 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+// The connection URL lives in prisma.config.ts (CLI) and src/core/db.ts (app).
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String   @id
+  email     String   @unique
+  name      String
+  roles     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Case {
+  id          String     @id @default(cuid())
+  type        String
+  status      String     @default("pending")
+  assigneeId  String?
+  requesterId String
+  amountCents Int        @default(0)
+  risk        String     @default("low")
+  data        String     @default("{}")
+  sensitive   String     @default("{}")
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  decidedAt   DateTime?
+  approvals   Approval[]
+
+  @@index([type, status, createdAt])
+  @@index([status, createdAt])
+  @@index([type, risk, createdAt])
+}
+
+model Approval {
+  id        String   @id @default(cuid())
+  caseId    String
+  userId    String
+  createdAt DateTime @default(now())
+  case      Case     @relation(fields: [caseId], references: [id])
+
+  @@unique([caseId, userId])
+}
+
+model AuditEntry {
+  id         Int      @id @default(autoincrement())
+  createdAt  DateTime
+  actorId    String
+  action     String
+  entityType String
+  entityId   String
+  before     String?
+  after      String?
+  requestId  String
+  prevHash   String   @unique
+  hash       String   @unique
+
+  @@index([entityType, entityId])
+}
+
+// Feature flags. `envs` is JSON: { dev: { on, plans }, staging: {...}, prod: {...} }.
+// An empty `plans` list means everyone; otherwise only those plan tiers.
+model Flag {
+  key         String       @id
+  description String
+  envs        String       @default("{}")
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  changes     FlagChange[]
+}
+
+model FlagChange {
+  id          String    @id @default(cuid())
+  flagKey     String
+  env         String
+  on          Boolean
+  plans       String    @default("[]")
+  status      String    @default("pending")
+  requesterId String
+  approverId  String?
+  reason      String?
+  createdAt   DateTime  @default(now())
+  decidedAt   DateTime?
+  flag        Flag      @relation(fields: [flagKey], references: [key])
+
+  @@index([flagKey, status])
+}
