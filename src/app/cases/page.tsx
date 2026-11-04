@@ -31,7 +31,7 @@ export default async function CasesPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <h1>Work queue</h1>
-      <form className="filters" method="get">
+      <form className="filters" method="get" key={sp.toString()}>
         <label>Type
           <select name="type" defaultValue={sp.get("type") ?? ""}>
             <option value="">All</option>

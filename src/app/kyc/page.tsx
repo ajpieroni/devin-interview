@@ -31,7 +31,7 @@ export default async function KycQueuePage({ searchParams }: { searchParams: Pro
     <>
       <h1>KYC review queue</h1>
       <p className="muted">Oldest first. Review target: {KYC_TARGET_DAYS} days.</p>
-      <form className="filters" method="get">
+      <form className="filters" method="get" key={sp.toString()}>
         <label>Status
           <select name="status" defaultValue={sp.get("status") ?? "open"}>
             <option value="open">Open</option>

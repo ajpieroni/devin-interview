@@ -67,7 +67,7 @@ export default async function RefundsPage({ searchParams }: { searchParams: Prom
           </tbody>
         </table>
       </div>
-      <form className="filters" method="get">
+      <form className="filters" method="get" key={sp.toString()}>
         <label>Status
           <select name="status" defaultValue={sp.get("status") ?? ""}>
             <option value="">All</option>

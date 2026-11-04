@@ -41,7 +41,7 @@ export default async function AuditPage({ searchParams }: { searchParams: Promis
         {can(user.roles, "audit:verify") && <VerifyAudit />}
         {can(user.roles, "audit:export") && <a href="/api/audit/export">Export CSV</a>}
       </div>
-      <form className="filters" method="get">
+      <form className="filters" method="get" key={sp.toString()}>
         <label>Actor
           <select name="actorId" defaultValue={sp.get("actorId") ?? ""}>
             <option value="">All</option>
